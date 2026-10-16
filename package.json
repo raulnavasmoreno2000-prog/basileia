@@ -1,0 +1,24 @@
+{
+  "name": "basileia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Juegos del mundo helenístico y seléucida",
+  "scripts": {
+    "integrar": "node scripts/integrar.mjs",
+    "android": "node scripts/integrar.mjs && npx cap sync android",
+    "servir": "npx --yes http-server www -p 8080 -c-1"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "@fontsource/alegreya": "5.3.0",
+    "@fontsource/alegreya-sans": "5.3.0",
+    "@fontsource/commissioner": "5.3.0",
+    "@fontsource/gfs-didot": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/marcellus-sc": "5.3.0"
+  }
+}

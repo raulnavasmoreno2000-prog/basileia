@@ -1,0 +1,14 @@
+{
+  "appId": "es.raulnavas.basileia",
+  "appName": "Basileia",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#101816"
+  },
+  "plugins": {
+    "SystemBars": {
+      "hidden": true,
+      "style": "DARK"
+    }
+  }
+}

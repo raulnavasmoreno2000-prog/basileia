@@ -1,0 +1,108 @@
+# Cada vez que se sube un cambio a la rama main:
+#   1. Prepara www/ (fuentes locales, botón de volver, lista sin conexión).
+#   2. Compila el APK de Android y lo publica en «Releases» del repositorio.
+#   3. Publica la versión web (para PC) en GitHub Pages.
+# También se puede lanzar a mano desde la pestaña Actions → Compilar → Run workflow.
+name: Compilar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: compilar
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Preparar www y copiarlo al proyecto Android
+        run: npm run android
+
+      - name: Recuperar la clave de firma
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/basileia.keystore"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/basileia.keystore" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Falta el secreto ANDROID_KEYSTORE_B64: el APK se firma con una clave de depuración."
+          fi
+
+      - name: Compilar el APK
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/Basileia.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Basileia-apk
+          path: Basileia.apk
+
+      - name: Publicar en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Basileia 1.0.${{ github.run_number }}
+          body: |
+            APK para Android. Descárgalo desde el móvil y ábrelo para instalarlo (la primera vez, Android pedirá permiso para instalar apps de esta fuente).
+            Cambio: ${{ github.event.head_commit.message || 'compilación manual' }}
+          files: Basileia.apk
+          make_latest: true
+
+  web:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Preparar www
+        run: |
+          npm ci
+          npm run integrar
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: www
+
+      - id: despliegue
+        uses: actions/deploy-pages@v4

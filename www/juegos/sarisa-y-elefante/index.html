@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Juego táctico por turnos con batallas de los reinos helenísticos y fuentes antiguas. Turn-based tactics game of Hellenistic battles with ancient sources.">
+<title>Sarisa y elefante</title>
+<!--basileia--><link rel="stylesheet" href="../../comun/fuentes.css"><!--basileia-->
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="topbar">
+    <span class="brand" data-t="brand">Sarisa y elefante</span>
+    <nav>
+      <div class="lang" role="group" aria-label="Idioma / Language">
+        <button type="button" data-l="es" aria-pressed="true">ES</button>
+        <button type="button" data-l="en" aria-pressed="false">EN</button>
+      </div>
+      <button class="btn ghost" id="btnRules" type="button" data-t="rules">Reglas</button>
+      <button class="btn ghost" id="btnOpts" type="button" data-t="opts">Opciones</button>
+      <button class="btn ghost" id="btnMenu" type="button" data-t="menuBtn" hidden>Elegir otra batalla</button>
+    </nav>
+  </header>
+
+  <section id="menu">
+    <div class="intro">
+      <p class="eyebrow" data-t="eyebrow"></p>
+      <h1 data-th="h1"></h1>
+      <p class="lede" data-t="lede"></p>
+    </div>
+    <div class="menu-grid">
+      <div class="list-col">
+        <div class="list-head"><span class="choose-label" data-t="battlesLbl"></span><small id="countLbl"></small></div>
+        <div class="battles" id="battleList"></div>
+      </div>
+      <div class="brief">
+        <div class="preview-box"><canvas id="preview"></canvas></div>
+        <div style="display:grid;gap:6px">
+          <h2 id="bfName"></h2>
+          <div class="meta" id="bfMeta"></div>
+        </div>
+        <div id="bfBody" style="display:grid;gap:16px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="game" class="game" hidden>
+    <div class="board-col">
+      <div class="board-head">
+        <h2 id="gTitle"></h2>
+        <div class="pills">
+          <span class="pill" id="turnPill"></span><span class="pill" id="phasePill"></span>
+          <button class="btn sm tog" id="btnDanger" type="button" data-t="danger" data-tt="dangerTip" aria-pressed="false"></button>
+          <button class="btn sm tog" id="btnCine" type="button" data-tt="cineTip" aria-pressed="true"></button>
+          <button class="btn sm" id="btnFull" type="button" data-t="full"></button>
+        </div>
+      </div>
+      <p class="hint" id="hint"></p>
+      <div class="stage" id="stage">
+        <div class="hud">
+          <div class="hud-l"><b id="hudTitle"></b><span class="pill" id="hudTurn"></span><span class="pill" id="hudPhase"></span></div>
+          <div class="hud-mid" id="hudMid"></div>
+          <div class="hud-r">
+            <button class="btn sm primary" id="hudEnd" type="button"></button>
+            <button class="btn sm" id="hudCancel" type="button" data-t="release"></button>
+            <button class="btn sm tog" id="hudDanger" type="button" data-t="danger" data-tt="dangerTip" aria-pressed="false"></button>
+            <button class="btn sm tog" id="hudPanel" type="button" data-t="panelBtn" data-tt="panelTip" aria-pressed="true"></button>
+            <button class="btn sm" id="hudExit" type="button" data-t="exitFull"></button>
+          </div>
+        </div>
+        <div class="board-scroll" id="boardScroll"><canvas id="board" aria-label="Mapa"></canvas></div>
+        <div class="fx" id="fx" hidden></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <aside class="panel" id="panel">
+      <!-- narrador del desarrollo histórico (observador.js) -->
+      <div class="box narr" id="narr" aria-live="polite" hidden></div>
+      <div class="box">
+        <h3 data-t="armies"></h3>
+        <div id="armies" style="display:grid;gap:12px"></div>
+      </div>
+      <div class="box" id="unitBox"></div>
+      <div class="actions">
+        <button class="btn primary" id="btnEnd" type="button"></button>
+        <button class="btn" id="btnCancel" type="button" data-t="release"></button>
+      </div>
+      <div class="box">
+        <h3 id="rosterH"></h3>
+        <div class="roster" id="roster"></div>
+        <details class="foes"><summary id="rosterFoeH"></summary><div class="roster" id="rosterFoe"></div></details>
+      </div>
+      <div class="box">
+        <h3 data-t="chronicle"></h3>
+        <ul class="log" id="log"></ul>
+      </div>
+    </aside>
+    <aside class="codex" id="codex">
+      <div class="codex-head">
+        <h3 data-t="codexTitle"></h3>
+        <p data-t="codexLede"></p>
+        <div class="tabs" role="tablist" id="codexTabs">
+          <button type="button" role="tab" data-tab="people" data-t="tabPeople"></button>
+          <button type="button" role="tab" data-tab="sources" data-t="tabSources"></button>
+          <button type="button" role="tab" data-tab="gloss" data-t="tabGloss"></button>
+        </div>
+      </div>
+      <div class="codex-body" id="codexBody"></div>
+    </aside>
+  </section>
+</div>
+
+<div class="scrim" id="modal" hidden><div class="dialog" role="dialog" aria-modal="true" id="dialog"></div></div>
+
+<!-- Escena de combate en 3D: pantalla superior con la acción y placas con la fuerza de cada unidad -->
+<div class="cine" id="cine" hidden>
+  <div class="cine-frame">
+    <div class="cine-bar"><span id="cineTitle"></span><button class="btn sm" id="cineSkip" type="button" data-t="skip"></button></div>
+    <div class="cine-view">
+      <canvas id="cineCv" width="640" height="360"></canvas>
+      <div class="cine-flash" id="cineFlash"></div>
+      <div class="cine-num" id="cineNumL"></div>
+      <div class="cine-num r" id="cineNumR"></div>
+      <div class="cine-msg" id="cineMsg"></div>
+    </div>
+    <div class="cine-plates">
+      <div class="plate" id="plateL"></div>
+      <div class="cine-kind" id="cineKind"></div>
+      <div class="plate r" id="plateR"></div>
+    </div>
+  </div>
+</div>
+
+<!-- three.js (copia local, r128) solo hace falta para el combate en 3D; si no carga, el juego usa la animación del tablero -->
+<script src="lib/three.min.js" async></script>
+<!-- El orden importa: cada archivo usa lo que definen los anteriores, e interfaz.js arranca el juego -->
+<script src="textos.js"></script>
+<script src="unidades.js"></script>
+<script src="batallas.js"></script>
+<script src="fuentes.js"></script>
+<script src="guiones.js"></script>
+<script src="juego.js"></script>
+<script src="tablero.js"></script>
+<script src="observador.js"></script>
+<script src="figuras3d.js"></script>
+<script src="sonido.js"></script>
+<script src="musica.js"></script>
+<script src="escena3d.js"></script>
+<script src="interfaz.js"></script>
+<!--basileia--><script src="../../comun/volver.js" defer></script><!--basileia-->
+</body>
+</html>
